@@ -3,14 +3,17 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+from apscheduler.schedulers.base import STATE_STOPPED
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
+from app import web
 from app.config import get_settings
 from app.database import Base, SessionLocal, engine
 from app.routers import runs, workflows
-from apscheduler.schedulers.base import STATE_STOPPED
-
 from app.scheduler import get_scheduler, reset_scheduler, sync_workflow_job
 
 logging.basicConfig(level=logging.INFO)
@@ -59,8 +62,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.mount(
+    "/static",
+    StaticFiles(directory=str(Path(__file__).parent / "static")),
+    name="static",
+)
+
 app.include_router(workflows.router)
 app.include_router(runs.router)
+app.include_router(web.router)
 
 
 @app.get("/health", tags=["meta"])
@@ -68,6 +78,6 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/", tags=["meta"])
+@app.get("/", include_in_schema=False)
 def root():
-    return {"service": settings.api_title, "docs": "/docs"}
+    return RedirectResponse(url="/ui")

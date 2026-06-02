@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Workflow Engine{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ title }}</h1></div>
+
+{% if error %}<div class="alert error">{{ error }}</div>{% endif %}
+
+<form method="post" action="{{ action }}" class="card" id="workflow-form">
+  <label>Name
+    <input type="text" name="name" value="{{ form.name }}" required maxlength="255">
+  </label>
+
+  <label>Description
+    <input type="text" name="description" value="{{ form.description }}">
+  </label>
+
+  <label>Python script
+    <textarea name="script" rows="14" class="code" spellcheck="false" required>{{ form.script }}</textarea>
+  </label>
+
+  <div class="grid-2">
+    <label>Schedule type
+      <select name="schedule_type" id="schedule_type">
+        {% for st in schedule_types %}
+        <option value="{{ st.value }}" {{ "selected" if form.schedule_type == st.value }}>{{ st.value }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>Timeout (seconds)
+      <input type="number" name="timeout_seconds" value="{{ form.timeout_seconds }}" min="1" placeholder="default">
+    </label>
+  </div>
+
+  <div class="sched-field" data-for="cron">
+    <label>Cron expression
+      <input type="text" name="cron_expression" value="{{ form.cron_expression }}" placeholder="0 2 * * *">
+      <span class="muted small">Standard 5-field cron (min hour day month weekday).</span>
+    </label>
+  </div>
+
+  <div class="sched-field" data-for="interval">
+    <label>Interval (seconds)
+      <input type="number" name="interval_seconds" value="{{ form.interval_seconds }}" min="1" placeholder="3600">
+    </label>
+  </div>
+
+  <div class="sched-field" data-for="date">
+    <label>Run at
+      <input type="datetime-local" name="run_at" value="{{ form.run_at }}">
+    </label>
+  </div>
+
+  <label class="checkbox">
+    <input type="checkbox" name="enabled" {{ "checked" if form.enabled }}> Enabled
+  </label>
+
+  <div class="form-actions">
+    <button type="submit" class="btn primary">Save</button>
+    <a href="/ui" class="btn">Cancel</a>
+  </div>
+</form>
+{% endblock %}

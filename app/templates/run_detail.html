@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Run #{{ run.id }} · Workflow Engine{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Run #{{ run.id }}</h1>
+  <a class="btn" href="/ui/workflows/{{ run.workflow_id }}">← Back to workflow</a>
+</div>
+
+<div class="card">
+  <dl class="meta">
+    <dt>Status</dt><dd><span class="pill status-{{ run.status.value }}">{{ run.status.value }}</span></dd>
+    <dt>Trigger</dt><dd>{{ run.trigger.value }}</dd>
+    <dt>Started</dt><dd>{{ run.started_at or "—" }}</dd>
+    <dt>Finished</dt><dd>{{ run.finished_at or "—" }}</dd>
+    <dt>Exit code</dt><dd>{{ run.exit_code if run.exit_code is not none else "—" }}</dd>
+  </dl>
+</div>
+
+<h2>stdout</h2>
+<pre class="code-block">{{ run.stdout or "(empty)" }}</pre>
+
+<h2>stderr</h2>
+<pre class="code-block stderr">{{ run.stderr or "(empty)" }}</pre>
+{% endblock %}

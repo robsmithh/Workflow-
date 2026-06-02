@@ -10,6 +10,8 @@ use case. Built to deploy on **Azure App Service** with a **PostgreSQL** backend
   exit code, and timing are captured as a **run** record.
 - Scheduling is backed by [APScheduler](https://apscheduler.readthedocs.io/) with a
   Postgres jobstore, so schedules survive restarts.
+- Includes a **server-rendered web UI** (`/ui`) for managing workflows and
+  browsing run logs, plus the JSON API and OpenAPI docs (`/docs`).
 
 > Status: MVP. Single-task workflows (one script per workflow). Multi-step DAGs
 > are a planned extension — see [Roadmap](#roadmap).
@@ -18,11 +20,13 @@ use case. Built to deploy on **Azure App Service** with a **PostgreSQL** backend
 
 ```
 FastAPI (app/main.py)
- ├── routers/workflows.py   CRUD + manual run + run history
+ ├── web.py                 server-rendered UI (Jinja2 templates + static assets)
+ ├── routers/workflows.py   CRUD + manual run + run history (JSON API)
  ├── routers/runs.py        inspect individual runs
  ├── scheduler.py           APScheduler (AsyncIOScheduler + Postgres jobstore)
  ├── executor.py            runs a workflow's script in a subprocess, records a run
  ├── models.py              Workflow, WorkflowRun (SQLAlchemy)
+ ├── templates/ static/     UI HTML + CSS/JS
  └── database.py            sync SQLAlchemy engine/session
 PostgreSQL                  app tables + APScheduler jobstore (apscheduler_jobs)
 ```
@@ -42,7 +46,26 @@ alembic upgrade head          # create tables
 uvicorn app.main:app --reload
 ```
 
-Open http://localhost:8000/docs for the interactive API.
+Then open:
+
+- **http://localhost:8000/ui** — the web UI (the root `/` redirects here)
+- **http://localhost:8000/docs** — interactive OpenAPI docs for the JSON API
+
+## Web UI
+
+The UI at `/ui` is server-rendered (Jinja2) and served by the same app — no
+separate build step or hosting. It provides:
+
+- A **dashboard** listing workflows with schedule, status, and next run time,
+  plus inline **Run / Enable-Disable / Edit** actions.
+- A **create/edit form** with a script editor and schedule-type-aware fields.
+- A **workflow detail** page showing the script, schedule metadata, and run
+  history; **Run now** triggers a background execution.
+- A **run detail** page with captured stdout/stderr, exit code, and timing.
+
+When `API_KEY` is set, the UI shows a login page; the key is stored in an
+HttpOnly cookie (the same shared secret the JSON API uses via `X-API-Key`).
+With `API_KEY` empty, the UI is open (local dev only).
 
 ### Create and run a workflow
 
@@ -152,4 +175,4 @@ record path.
 - Multi-step workflows / DAGs with inter-step dependencies.
 - Pluggable execution backends (container/VM isolation).
 - Notifications on failure (email/webhook) and retry policies.
-- Web UI for managing workflows and browsing run logs.
+- Richer UI: live-updating run output, log search, and per-workflow metrics.

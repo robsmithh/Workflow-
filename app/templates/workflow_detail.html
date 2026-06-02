@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ wf.name }} · Workflow Engine{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ wf.name }}</h1>
+    {% if wf.description %}<p class="muted">{{ wf.description }}</p>{% endif %}
+  </div>
+  <div class="actions">
+    <form method="post" action="/ui/workflows/{{ wf.id }}/run">
+      <button class="btn primary">▶ Run now</button>
+    </form>
+    <a class="btn" href="/ui/workflows/{{ wf.id }}/edit">Edit</a>
+    <form method="post" action="/ui/workflows/{{ wf.id }}/delete"
+          onsubmit="return confirm('Delete this workflow and its run history?');">
+      <button class="btn danger">Delete</button>
+    </form>
+  </div>
+</div>
+
+{% if request.query_params.get("triggered") %}
+<div class="alert info">Run triggered. It will appear below once it finishes — refresh in a moment.</div>
+{% endif %}
+
+<div class="card">
+  <dl class="meta">
+    <dt>Schedule</dt><dd><span class="badge">{{ wf.schedule_type.value }}</span>
+      {% if wf.schedule_type.value == "cron" %}<code>{{ wf.cron_expression }}</code>
+      {% elif wf.schedule_type.value == "interval" %}every {{ wf.interval_seconds }}s
+      {% elif wf.schedule_type.value == "date" %}{{ wf.run_at }}{% endif %}</dd>
+    <dt>Status</dt><dd>{% if wf.enabled %}<span class="pill ok">enabled</span>{% else %}<span class="pill off">disabled</span>{% endif %}</dd>
+    <dt>Next run</dt><dd>{{ next_run_time or "—" }}</dd>
+    <dt>Timeout</dt><dd>{{ wf.timeout_seconds or "default" }}</dd>
+  </dl>
+</div>
+
+<h2>Script</h2>
+<pre class="code-block">{{ wf.script }}</pre>
+
+<h2>Run history</h2>
+{% if not runs %}
+  <p class="muted">No runs yet.</p>
+{% else %}
+<table class="table">
+  <thead><tr><th>#</th><th>Status</th><th>Trigger</th><th>Started</th><th>Finished</th><th>Exit</th></tr></thead>
+  <tbody>
+    {% for run in runs %}
+    <tr>
+      <td><a href="/ui/runs/{{ run.id }}" class="link-strong">{{ run.id }}</a></td>
+      <td><span class="pill status-{{ run.status.value }}">{{ run.status.value }}</span></td>
+      <td>{{ run.trigger.value }}</td>
+      <td class="muted small">{{ run.started_at or "—" }}</td>
+      <td class="muted small">{{ run.finished_at or "—" }}</td>
+      <td>{{ run.exit_code if run.exit_code is not none else "—" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

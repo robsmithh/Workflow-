@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Workflows · Workflow Engine{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Workflows</h1>
+  <a href="/ui/workflows/new" class="btn primary">+ New workflow</a>
+</div>
+
+{% if not rows %}
+  <div class="card empty">
+    <p>No workflows yet.</p>
+    <a href="/ui/workflows/new" class="btn primary">Create your first workflow</a>
+  </div>
+{% else %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>Name</th><th>Schedule</th><th>Status</th><th>Next run</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    {% set wf = row.wf %}
+    <tr>
+      <td>
+        <a href="/ui/workflows/{{ wf.id }}" class="link-strong">{{ wf.name }}</a>
+        {% if wf.description %}<div class="muted small">{{ wf.description }}</div>{% endif %}
+      </td>
+      <td>
+        <span class="badge">{{ wf.schedule_type.value }}</span>
+        {% if wf.schedule_type.value == "cron" %}<code>{{ wf.cron_expression }}</code>
+        {% elif wf.schedule_type.value == "interval" %}every {{ wf.interval_seconds }}s
+        {% elif wf.schedule_type.value == "date" %}{{ wf.run_at }}{% endif %}
+      </td>
+      <td>
+        {% if wf.enabled %}<span class="pill ok">enabled</span>
+        {% else %}<span class="pill off">disabled</span>{% endif %}
+      </td>
+      <td class="muted small">{{ row.next_run_time or "—" }}</td>
+      <td class="actions">
+        <form method="post" action="/ui/workflows/{{ wf.id }}/run">
+          <button class="btn small" title="Run now">▶ Run</button>
+        </form>
+        <form method="post" action="/ui/workflows/{{ wf.id }}/toggle">
+          <button class="btn small">{{ "Disable" if wf.enabled else "Enable" }}</button>
+        </form>
+        <a class="btn small" href="/ui/workflows/{{ wf.id }}/edit">Edit</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

@@ -10,6 +10,8 @@ multiple processes against the same jobstore can double-fire jobs.
 from __future__ import annotations
 
 import logging
+import uuid
+from datetime import datetime
 
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -82,6 +84,23 @@ def sync_workflow_job(workflow: Workflow) -> None:
         replace_existing=True,
     )
     logger.info("Scheduled job %s (%s)", jid, workflow.schedule_type.value)
+
+
+def trigger_now(workflow_id: int, name: str = "") -> None:
+    """Fire a one-off manual run in the background via the scheduler's pool.
+
+    Unlike the synchronous JSON `run` endpoint, this returns immediately; the
+    run shows up in history once the script finishes.
+    """
+    scheduler = get_scheduler()
+    scheduler.add_job(
+        func="app.executor:execute_workflow_job",
+        trigger=DateTrigger(run_date=datetime.now(scheduler.timezone)),
+        args=[workflow_id, "manual"],
+        id=f"manual:{workflow_id}:{uuid.uuid4().hex}",
+        name=f"manual:{name or workflow_id}",
+        misfire_grace_time=300,
+    )
 
 
 def remove_workflow_job(workflow_id: int) -> None:
